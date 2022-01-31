@@ -1,50 +1,20 @@
-from .constants import GROUP_API, GROUP_API_ADDR, BATCH_GROUP_REQUEST,\
-    SINGLE_GROUP_REQUEST
-from .utils import parse_batch_response, make_http_socket, shutdown_socket,\
-    send_webhook, make_embed
-from datetime import datetime, timezone
-from time import time, sleep
+from ..utils import parse_batch_response, make_http_socket, shutdown_socket
 from json import loads as json_loads
 from zlib import decompress
+from datetime import datetime, timezone
+from time import time
 
-def log_notifier(log_queue, webhook_url):
-    while True:
-        date, group_info = log_queue.get()
-
-        print(f"[{date.strftime('%H:%M:%S')}]",
-              f"roblox.com/groups/{group_info['id']:08d}",
-              "|", f"{str(group_info['memberCount']).rjust(2)} member(s)",
-              "|", group_info["name"])
-            
-        if webhook_url:
-            try:
-                send_webhook(
-                    webhook_url, embeds=(make_embed(group_info, date),))
-            except Exception as err:
-                print(f"[log-notifier] error: {err!r}")
-
-def stat_updater(count_queue):
-    count_cache = {}
-
-    while True:
-        while True:
-            try:
-                for ts, count in count_queue.get(block=False):
-                    ts = int(ts)
-                    count_cache[ts] = count_cache.get(ts, 0) + count
-            except:
-                break
-            
-        now = time()
-        total_count = 0
-        for ts, count in tuple(count_cache.items()):
-            if now - ts > 60:
-                count_cache.pop(ts)
-                continue
-            total_count += count
-        
-        print(f"Speed: {total_count/1e6:.2f}m RPM", end="\r")
-        sleep(0.1)
+GROUP_API = "groups.roblox.com"
+GROUP_API_ADDR = (__import__("socket").gethostbyname(GROUP_API), 443)
+BATCH_GROUP_REQUEST = (
+    b"GET /v2/groups?groupIds=%b HTTP/1.1\n"
+    b"Host:groups.roblox.com\n"
+    b"Accept-Encoding:deflate\n"
+    b"\n")
+SINGLE_GROUP_REQUEST = (
+    b"GET /v1/groups/%b HTTP/1.1\n"
+    b"Host:groups.roblox.com\n"
+    b"\n")
 
 def group_scanner(log_queue, count_queue, proxy_iter, timeout,
                   gid_ranges, gid_cutoff, gid_chunk_size):
@@ -52,8 +22,7 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
     gid_list = [
         str(gid).encode()
         for gid_range in gid_ranges
-        for gid in range(*gid_range)
-    ]
+        for gid in range(*gid_range)]
     gid_list_len = len(gid_list)
     gid_list_idx = 0
 
@@ -75,8 +44,7 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
         while True:
             gid_chunk = [
                 gid_list[(gid_list_idx + n) % gid_list_len]
-                for n in range(1, gid_chunk_size + 1)
-            ]
+                for n in range(1, gid_chunk_size + 1)]
             gid_list_idx += gid_chunk_size
 
             try:
@@ -85,10 +53,12 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
                 resp = sock.recv(1048576)
                 if not resp.startswith(b"HTTP/1.1 200 OK"):
                     break
-                resp = resp.partition(b"\r\n\r\n")[2]
+                resp = resp[resp.find(b"\r\n\r\n") + 4:]
                 while resp[-1] != 0:
                     resp += sock.recv(1048576)
-                owner_status = parse_batch_response(decompress(resp, -15), gid_chunk_size)
+                owner_status = parse_batch_response(
+                    decompress(resp, -15),
+                    gid_chunk_size)
 
                 for gid in gid_chunk:
                     if gid not in owner_status:
@@ -123,13 +93,11 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
                     resp = sock.recv(1048576)
                     if not resp.startswith(b"HTTP/1.1 200 OK"):
                         break
-                    group_info = json_loads(resp.partition(b"\r\n\r\n")[2])
+                    group_info = json_loads(resp[resp.find(b"\r\n\r\n") + 4:])
 
-                    if (
-                        not group_info["publicEntryAllowed"]
+                    if (not group_info["publicEntryAllowed"]
                         or group_info["owner"]
-                        or "isLocked" in group_info
-                    ):
+                        or "isLocked" in group_info):
                         # Group cannot be claimed, ignore it in the future.
                         gid_list.remove(gid)
                         gid_list_len -= 1
@@ -148,7 +116,7 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
             except KeyboardInterrupt:
                 exit()
             
-            except Exception as err:
+            except:
                 break
             
         shutdown_socket(sock)
