@@ -110,7 +110,7 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
                     gid_list.remove(gid)
                     gid_list_len -= 1
 
-                # Let the counter know gid_chunk_size groups were checked.
+                # Let the counter know <gid_chunk_size> groups were checked.
                 count_queue.put((time(), gid_chunk_size))
 
             except KeyboardInterrupt:
