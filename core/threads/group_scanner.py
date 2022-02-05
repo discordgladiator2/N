@@ -6,15 +6,6 @@ from time import time
 
 GROUP_API = "groups.roblox.com"
 GROUP_API_ADDR = (__import__("socket").gethostbyname(GROUP_API), 443)
-BATCH_GROUP_REQUEST = (
-    b"GET /v2/groups?groupIds=%b HTTP/1.1\n"
-    b"Host:groups.roblox.com\n"
-    b"Accept-Encoding:deflate\n"
-    b"\n")
-SINGLE_GROUP_REQUEST = (
-    b"GET /v1/groups/%b HTTP/1.1\n"
-    b"Host:groups.roblox.com\n"
-    b"\n")
 
 def group_scanner(log_queue, count_queue, proxy_iter, timeout,
                   gid_ranges, gid_cutoff, gid_chunk_size):
@@ -49,7 +40,11 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
 
             try:
                 # Request batch group details.
-                sock.send(BATCH_GROUP_REQUEST % b",".join(gid_chunk))
+                sock.send(
+                    b"GET /v2/groups?groupIds=" + b",".join(gid_chunk) + b" HTTP/1.1\n"
+                    b"Host:groups.roblox.com\n"
+                    b"Accept-Encoding:deflate\n"
+                    b"\n")
                 resp = sock.recv(1048576)
                 if resp[:12] != b"HTTP/1.1 200":
                     break
@@ -89,7 +84,10 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
 
                     # Group is marked as tracked and doesn't have an owner.
                     # Request extra details and determine if it's claimable.
-                    sock.send(SINGLE_GROUP_REQUEST % gid)
+                    sock.send(
+                        b"GET /v1/groups/" + gid + b" HTTP/1.1\n"
+                        b"Host:groups.roblox.com\n"
+                        b"\n")
                     resp = sock.recv(1048576)
                     if not resp.startswith(b"HTTP/1.1 200 OK"):
                         break
