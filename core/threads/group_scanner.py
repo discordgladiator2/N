@@ -49,7 +49,7 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
 
             try:
                 # Request batch group details.
-                sock.sendall(BATCH_GROUP_REQUEST % b",".join(gid_chunk))
+                sock.send(BATCH_GROUP_REQUEST % b",".join(gid_chunk))
                 resp = sock.recv(1048576)
                 if not resp.startswith(b"HTTP/1.1 200 OK"):
                     break
@@ -89,7 +89,7 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
 
                     # Group is marked as tracked and doesn't have an owner.
                     # Request extra details and determine if it's claimable.
-                    sock.sendall(SINGLE_GROUP_REQUEST % gid)
+                    sock.send(SINGLE_GROUP_REQUEST % gid)
                     resp = sock.recv(1048576)
                     if not resp.startswith(b"HTTP/1.1 200 OK"):
                         break
