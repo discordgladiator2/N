@@ -51,7 +51,7 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
                 # Request batch group details.
                 sock.send(BATCH_GROUP_REQUEST % b",".join(gid_chunk))
                 resp = sock.recv(1048576)
-                if not resp.startswith(b"HTTP/1.1 200 OK"):
+                if resp[:12] != b"HTTP/1.1 200":
                     break
                 resp = resp[resp.find(b"\r\n\r\n") + 4:]
                 while resp[-1] != 0:
