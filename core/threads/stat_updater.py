@@ -21,4 +21,4 @@ def stat_updater(count_queue):
             total_count += count
         
         print(f"Speed: {total_count/1e6:.2f}m RPM", end="\r")
-        sleep(0.1)
+        sleep(0.10)

@@ -7,8 +7,7 @@ from time import sleep
 def worker_func(thread_count, log_queue, count_queue, proxy_list, gid_ranges,
                 **thread_kwargs):    
     local_count_queue = Queue()
-    proxy_iter = __import__("itertools").cycle(proxy_list) \
-                 if proxy_list else None
+    proxy_iter = __import__("itertools").cycle(proxy_list)
     threads = []
 
     for thread_num in range(thread_count):

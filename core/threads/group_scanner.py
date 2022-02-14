@@ -21,7 +21,7 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
         gid_cutoff = str(gid_cutoff).encode()
 
     while gid_list_len >= gid_chunk_size:
-        proxy_auth, proxy_addr = next(proxy_iter) if proxy_iter else (None, None)
+        proxy_auth, proxy_addr = next(proxy_iter)
         try:
             sock = make_http_socket(
                 GROUP_API_ADDR,
@@ -52,8 +52,7 @@ def group_scanner(log_queue, count_queue, proxy_iter, timeout,
                 while resp[-1] != 0:
                     resp += sock.recv(1048576)
                 owner_status = parse_batch_response(
-                    decompress(resp, -15),
-                    gid_chunk_size)
+                    decompress(resp, -15), gid_chunk_size)
 
                 for gid in gid_chunk:
                     if gid not in owner_status:

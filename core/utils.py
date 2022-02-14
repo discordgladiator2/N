@@ -14,20 +14,18 @@ def parse_proxy_string(proxy_str):
         hostname, port = fields
         if auth:
             auth = "Basic " + b64encode(auth.encode()).decode()
-        addr = (hostname.lower(), int(port))
-        return auth, addr
-
     elif len(fields) == 3:
         hostname, port, auth = fields
         auth = "Basic " + b64encode(auth.encode()).decode()
-        addr = (hostname.lower(), int(port))
-        return auth, addr
-    
-    raise Exception(f"Unrecognized proxy format: {proxy_str}")
+    else:
+        raise Exception(f"Unrecognized proxy format: {proxy_str}")
+
+    addr = (hostname.lower(), int(port))
+    return auth, addr
 
 def parse_batch_response(data, limit):
     index = 10
-    status = {}
+    status_assoc = {}
     for _ in range(limit):
         id_index = data.find(b'"id":', index)
         if id_index == -1:
@@ -35,9 +33,9 @@ def parse_batch_response(data, limit):
         index = data.find(b",", id_index + 5)
         group_id = data[id_index + 5 : index]
         index = data.find(b'"owner":', index) + 8
-        status[group_id] = (data[index] == 123)
+        status_assoc[group_id] = (data[index] == 123)
         index += 25
-    return status
+    return status_assoc
 
 def find_latest_group_id():
     group_id = 0
