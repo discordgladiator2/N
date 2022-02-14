@@ -15,4 +15,4 @@ def log_notifier(log_queue, webhook_url):
                 send_webhook(
                     webhook_url, embeds=(make_embed(group_info, date),))
             except Exception as err:
-                print(f"[log-notifier] error: {err!r}")
+                print(f"[log-notifier] webhook error: {err!r}")
